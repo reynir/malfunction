@@ -168,6 +168,18 @@ and parse_exp env (loc, sexp) = match sexp with
 
      Mswitch (parse_exp env exp, cases)
 
+  | List ((_, Atom "string-switch") :: exp :: cases) ->
+    let parse_case loc = function
+      | [_, String s; e] -> s, parse_exp env e
+      | [loc,_; _e] -> fail loc "invalid selector"
+      | _ -> fail loc "invalid case"
+    in
+    let cases =
+      List.map (function
+          | loc, List c -> parse_case loc c
+          | loc, _ -> fail loc "invalid case") cases in
+    Mstringswitch (parse_exp env exp, cases)
+
   | List [_, Atom "if"; cond; tt; ff] ->
      Mswitch (parse_exp env cond, 
               [[`Intrange (0, 0)], parse_exp env ff;

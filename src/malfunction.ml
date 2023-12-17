@@ -37,6 +37,7 @@ type t =
 | Mstring of string
 | Mglobal of Longident.t
 | Mswitch of t * (case list * t) list
+| Mstringswitch of t * (string * t) list
 
 (* Numbers *)
 | Mnumop1 of unary_num_op * numtype * t

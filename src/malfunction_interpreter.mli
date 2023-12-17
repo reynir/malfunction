@@ -9,6 +9,7 @@ type value =
 | Int of inttype * Z.t
 | Float of float
 | Thunk of value Lazy.t
+| String of string
 
 val eval : t -> value
 val render_value : value -> Malfunction_sexp.sexp

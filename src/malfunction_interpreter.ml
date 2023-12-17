@@ -7,6 +7,7 @@ type value =
 | Int of inttype * Z.t
 | Float of float
 | Thunk of value Lazy.t
+| String of string
 
 exception Error of string
 
@@ -125,6 +126,16 @@ let rec interpret locals env : t -> value = function
             find_match rest
        | [] -> fail "no case matches" in
      find_match cases
+  | Mstringswitch (scr, cases) ->
+    let scr = interpret locals env scr in
+    begin match scr with
+      | String scr ->
+        begin match List.assoc_opt scr cases with
+          | Some e -> interpret locals env e
+          | None -> fail "no match"
+        end
+      | _ -> fail "not a string"
+    end
   | Mnumop1 (op, (#inttype as ty), e) ->
      let n = as_ty ty (interpret locals env e) in
      truncate ty (match op with `Neg -> Z.neg n | `Not -> Z.lognot n)
@@ -282,3 +293,5 @@ let rec render_value = let open Malfunction_sexp in function
      | FP_infinite -> if f < 0. then "neg_infinity" else "infinity"
      | _ -> string_of_float f in
    loc, Atom s
+| String s ->
+  loc, String s
