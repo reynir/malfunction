@@ -7,7 +7,6 @@ type value =
 | Int of inttype * Z.t
 | Float of float
 | Thunk of value Lazy.t
-| String of string
 
 exception Error of string
 
@@ -129,7 +128,22 @@ let rec interpret locals env : t -> value = function
   | Mstringswitch (scr, cases) ->
     let scr = interpret locals env scr in
     begin match scr with
-      | String scr ->
+      | Vec (`Bytevec, arr) ->
+        let scr =
+          String.init (Array.length arr)
+            (fun i ->
+               match arr.(i) with
+               | Int (`Int, v) ->
+                 (match Z.to_int v with
+                  | v ->
+                    if v >= 0 && v < 256 then
+                      Char.chr v
+                    else
+                      fail "not a char"
+                  | exception Z.Overflow ->
+                    fail "not a char")
+               | _ -> fail "not a char")
+        in
         begin match List.assoc_opt scr cases with
           | Some e -> interpret locals env e
           | None -> fail "no match"
@@ -293,5 +307,3 @@ let rec render_value = let open Malfunction_sexp in function
      | FP_infinite -> if f < 0. then "neg_infinity" else "infinity"
      | _ -> string_of_float f in
    loc, Atom s
-| String s ->
-  loc, String s

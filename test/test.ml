@@ -18,7 +18,6 @@ let rec reify = function
   | `Int64 -> repr (Z.to_int64 n)
   | `Bigint -> repr n)
 | Float f -> Obj.repr f
-| String s -> Obj.repr s
 | Func _ -> raise (ReifyFailure "reify: functional value")
 | Thunk _ -> raise (ReifyFailure "reify: lazy value")
 
