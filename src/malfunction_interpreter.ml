@@ -125,7 +125,7 @@ let rec interpret locals env : t -> value = function
             find_match rest
        | [] -> fail "no case matches" in
      find_match cases
-  | Mstringswitch (scr, cases) ->
+  | Mstringswitch (scr, cases, opt_default) ->
     let scr = interpret locals env scr in
     begin match scr with
       | Vec (`Bytevec, arr) ->
@@ -144,9 +144,10 @@ let rec interpret locals env : t -> value = function
                     fail "not a char")
                | _ -> fail "not a char")
         in
-        begin match List.assoc_opt scr cases with
-          | Some e -> interpret locals env e
-          | None -> fail "no match"
+        begin match List.assoc_opt scr cases, opt_default with
+          | Some e, _ -> interpret locals env e
+          | None, Some e -> interpret locals env e
+          | None, None -> fail "no match"
         end
       | _ -> fail "not a string"
     end

@@ -170,15 +170,25 @@ and parse_exp env (loc, sexp) = match sexp with
 
   | List ((_, Atom "string-switch") :: exp :: cases) ->
     let parse_case loc = function
-      | [_, String s; e] -> s, parse_exp env e
+      | [_, String s; e] -> `String s, parse_exp env e
+      | [_, Atom "_"; e] -> `Defstring, parse_exp env e
       | [loc,_; _e] -> fail loc "invalid selector"
       | _ -> fail loc "invalid case"
     in
-    let cases =
-      List.map (function
-          | loc, List c -> parse_case loc c
-          | loc, _ -> fail loc "invalid case") cases in
-    Mstringswitch (parse_exp env exp, cases)
+    let rev_cases, default_case =
+      List.fold_left
+        (fun (acc, def) case ->
+           match case, def with
+           | (loc, (Atom _ | String _ | Var _)), _ -> fail loc "invalid case"
+           | (loc, List _), Some _ ->
+             (* Should it be an error or silently drop unusable cases!? *)
+             fail loc "unusable case"
+           | (loc, List c), None ->
+             match parse_case loc c with
+             | `String s, e -> (s, e) :: acc, def
+             | `Defstring, e -> acc, Some e)
+        ([], None) cases in
+    Mstringswitch (parse_exp env exp, List.rev rev_cases, default_case)
 
   | List [_, Atom "if"; cond; tt; ff] ->
      Mswitch (parse_exp env cond, 

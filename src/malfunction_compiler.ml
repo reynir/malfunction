@@ -40,8 +40,11 @@ let rec reorder = function
 | Mswitch (e, cases) ->
    `Impure, Mswitch (snd (reorder e), List.map (fun (c, e) -> c, snd (reorder e)) cases)
 
-| Mstringswitch (e, cases) ->
-  `Impure, Mstringswitch (snd (reorder e), List.map (fun (c, e) -> c, snd (reorder e)) cases)
+| Mstringswitch (e, cases, opt_default) ->
+  let e = snd (reorder e)
+  and cases = List.map (fun (c, e) -> c, snd (reorder e)) cases
+  and opt_default = Option.map (fun e -> snd (reorder e)) opt_default in
+  `Impure, Mstringswitch (e, cases, opt_default)
 
 | Mnumop1(op, ty, t) ->
    reorder_sub `Pure (fun ev ->
@@ -437,10 +440,11 @@ let rec to_lambda env = function
             | Some eint, Some etag ->
                Lifthenelse (lprim Pisint [scr], eint, etag)) in
      flatten [] cases
-  | Mstringswitch (scr, cases) ->
+  | Mstringswitch (scr, cases, opt_default) ->
     let scr = to_lambda env scr in
     let cases = List.map (fun (c, e) -> (c, to_lambda env e)) cases in
-    Lstringswitch (scr, cases, None, loc_none)
+    let opt_default = Option.map (to_lambda env) opt_default in
+    Lstringswitch (scr, cases, opt_default, loc_none)
   | Mnumop1 (op, ty, e) ->
      let e = to_lambda env e in
      let ones32 = Const_base (Asttypes.Const_int32 (Int32.of_int (-1))) in
