@@ -1,0 +1,10 @@
+(test
+  (let
+    ($s "hello")
+    (_ (store.byte $s 0 72))
+    (string-switch
+      $s
+      ("hi" 0)
+      ("hello" 0)
+      ("Hello" 1)))
+  1)
